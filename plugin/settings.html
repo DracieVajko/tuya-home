@@ -1,0 +1,92 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- Tuya Home settings. Background and text colour come from the host; do not paint the page. -->
+<style>
+  .row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .label { font-size: 12px; font-weight: 600; color: var(--text-secondary, #6b6b66); }
+  .hint { font-size: 12px; line-height: 1.45; color: var(--text-tertiary, #8a8a84); }
+  .inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  input[type="password"], input[type="text"], select {
+    flex: 1 1 180px; min-width: 0; padding: 7px 9px; font: inherit; font-size: 13px;
+    border-radius: 8px; border: 1px solid var(--border-default, #e4e4e0);
+    background: var(--surface, #fff); color: inherit;
+  }
+  button {
+    padding: 7px 12px; font: inherit; font-size: 13px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border-default, #e4e4e0); background: var(--surface, #fff); color: inherit;
+  }
+  button.primary { background: var(--accent, #2f6f4f); border-color: transparent; color: #fff; }
+  button:disabled { opacity: .55; cursor: default; }
+  .status { font-size: 12px; line-height: 1.5; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid var(--border-default, #e4e4e0); color: var(--text-secondary, #6b6b66); }
+  .status.ok { border-color: var(--success, #2f6f4f); }
+  .status.bad { border-color: var(--danger, #a3372f); }
+  a { color: var(--accent, #2f6f4f); }
+  code { font-size: 12px; }
+</style>
+<body style="margin:0;padding:12px">
+  <div class="row">
+    <span class="label">Tuya API key</span>
+    <div class="inline">
+      <input id="key" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false">
+      <button id="save" class="primary">Save key</button>
+      <button id="clear">Remove</button>
+    </div>
+    <span class="hint" id="keystate">Checking…</span>
+    <span class="hint">
+      Create the key at <a href="https://tuya.ai/developer">tuya.ai/developer</a> (international) or
+      <a href="https://tuyasmart.com/">tuyasmart.com</a> (China mainland); API docs:
+<a href="https://tuya.ai/developer/docs">tuya.ai/developer/docs</a>. The key is stored by Cindy,
+      never by this plugin: it is only injected into requests to Tuya's API.
+    </span>
+  </div>
+
+  <div class="row">
+    <span class="label">Data centre</span>
+    <div class="inline">
+      <select id="region">
+        <option value="">Detect automatically</option>
+        <option value="cn">China mainland (tuyacn)</option>
+        <option value="us-w">US West (tuyaus)</option>
+        <option value="us-e">US East (ueaz)</option>
+        <option value="eu-c">Central Europe (tuyaeu)</option>
+        <option value="eu-w">Western Europe (weaz)</option>
+        <option value="in">India (tuyain)</option>
+        <option value="sg">Singapore (iotbing)</option>
+      </select>
+      <button id="test">Test connection</button>
+    </div>
+    <span class="hint">
+      A Tuya key only works in the data centre where the account is registered, and this plugin
+      cannot read the key to see which one that is. Automatic detection asks the remembered centre
+      first, then the others in turn, retrying a blocked request once before moving on. Pin a centre
+      here if the account is region-locked.
+    </span>
+    <span class="hint" id="detected"></span>
+  </div>
+
+  <div class="row">
+    <span class="label">Advanced — home structure</span>
+    <div class="inline">
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer">
+        <input id="advanced" type="checkbox">
+        <span>Let the assistant try room and device-structure changes</span>
+      </label>
+    </div>
+    <span class="hint">
+      Off by default. With it on, the assistant may also do three things:
+      create a room, move one device into a room, and <b>unbind (remove) a device</b>.
+      Unbinding deletes the device from your Tuya account and from the Tuya app. That is
+      permanent from here: the device disappears from the app and has to be paired again
+      to come back. Scenes that pointed at it stop controlling anything.
+      It requires the key to be allowed to manage this home; an ordinary
+      end-user key (<code>sk-</code>) is refused by Tuya (1010/1108), and the plugin then
+      reports the refusal instead of retrying. Reading state, switching devices and
+      renaming are not affected by this setting either way.
+    </span>
+  </div>
+
+  <div class="status" id="test-result" style="display:none"></div>
+
+  <script src="/settings.js"></script>
+</body>

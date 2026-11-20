@@ -1,0 +1,3 @@
+# The OpenClaw scripts use requests for HTTPS; the Cindy plugin and the MCP
+# variant need nothing beyond the standard library.
+requests>=2.31,<3

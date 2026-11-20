@@ -1,0 +1,26 @@
+# secrets / local
+*.env
+.env
+TUYA_API_KEY
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+# node / python
+node_modules/
+__pycache__/
+*.pyc
+# cindy packages
+*.cindy
+# local test artifacts
+*.json.bak
+dist/
+
+# local account snapshot (never shipped)
+COMMANDS-account.md
+
+# desloppify working state
+.desloppify/
+scorecard.png
+query.json

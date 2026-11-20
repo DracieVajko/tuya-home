@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="/panel.css">
+<body>
+  <div class="head">
+    <span class="title" id="headline">Devices</span>
+    <button id="refresh" title="Read Tuya again">Refresh</button>
+  </div>
+
+  <div class="body" id="list">
+    <p class="empty">Loading…</p>
+  </div>
+
+  <div class="foot" id="foot">
+    Tuya pushes changes over WebSocket, which this plugin cannot hold open, so state is read when you refresh.
+  </div>
+
+  <script src="/panel.js"></script>
+</body>

@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 3,
+  "id": "tuya-home",
+  "name": "Tuya Home",
+  "description": "See and control Tuya / Smart Life devices from Cindy: homes, rooms, live state, switches, brightness, temperature and modes. An off-by-default advanced mode can also create rooms, move devices and unbind one (permanent, needs re-pairing). The key stays in Cindy's vault.",
+  "whenToUse": "Use when the user wants to see or change Tuya or Smart Life devices: lights, plugs, air conditioners, sensors, curtains. Asking what is switched on, how warm a room is, turning something on or off, setting brightness, temperature or mode, listing homes or rooms, or renaming a device.",
+  "version": "0.3.1",
+  "minCindyVersion": "0.1.137",
+  "icon": "assets/icon.png",
+  "releaseNotes": "Follow-up to 0.3.0. Writes are never replayed after a server error or a garbled body; a probe that mixes rejections with silent centres no longer tells the user to create a new key; tool errors carry hint in its own field and panel replies use errorCode, the same envelope; asArray takes the payload key, scale conversion and device lookup each live in one place; the MCP server rounds applied values, retries a write only when it never reached Tuya, and validates device ids; check_manifest also verifies the kv keys, panel actions, tool table and error codes in both directions.",
+  "entry": "main.js",
+  "command": "tuya",
+  "readme": {
+    "en": "README.md"
+  },
+  "tools": [
+    {
+      "name": "list_devices",
+      "description": "List the user's Tuya homes, rooms and devices with online status. Returns a compact tree plus a devices array. Use this first when the user names a device by room or by what it is.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "home_id": {
+            "type": "string",
+            "description": "Only list devices in this home. Omit to list every home."
+          },
+          "room_id": {
+            "type": "string",
+            "description": "Only list devices in this room. Takes a room id from list_homes; home_id is optional, the room already identifies the home."
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "Ignore the short-lived cache and read Tuya again. Use after the user says something just changed."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_device",
+      "description": "Read one device: current property values plus the properties it accepts, with each one's type and allowed range. Call this before changing anything you are unsure about.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "description": "Device id from list_devices."
+          }
+        },
+        "required": [
+          "device_id"
+        ]
+      }
+    },
+    {
+      "name": "set_device",
+      "description": "Change properties on one device. Values are validated against the device's own model before anything is sent: unknown codes, read-only codes and out-of-range values fail locally with the allowed values. Only call this when the user actually asked for the change.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "description": "Device id from list_devices."
+          },
+          "properties": {
+            "type": "object",
+            "description": "Property code to new value, e.g. {\"switch_led\": true}. Numbers must be inside the range get_device reports for that property, and are scaled automatically: pass 22.5 for an air conditioner whose range is 16 to 30, and 500 for a light whose range is 10 to 1000 (half brightness). Booleans must be JSON true/false. Enums must be one of the listed range values.",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "device_id",
+          "properties"
+        ]
+      }
+    },
+    {
+      "name": "list_homes",
+      "description": "List the user's Tuya homes and their rooms. Use when the user asks which home or room a device is in, or before scoping list_devices by home.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "rename_device",
+      "description": "Rename a device in the user's Tuya account. This changes what they see in the Tuya app too, so only do it when the user asked to rename.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "description": "Device id from list_devices."
+          },
+          "name": {
+            "type": "string",
+            "description": "New display name, 1 to 40 characters, verbatim from the user."
+          }
+        },
+        "required": [
+          "device_id",
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "create_room",
+      "description": "[Advanced, off by default: refuses unless the user enabled home-structure tools in this plugin's settings.] Create a room in a Tuya home. Only do this when the user asked for it. Returns created=false with the existing room id when a room of that name is already there, so it is safe to repeat.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Room name, 1 to 40 characters, verbatim from the user."
+          },
+          "home_id": {
+            "type": "string",
+            "description": "Home to create the room in. Omit when the account has exactly one home."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "assign_device_room",
+      "description": "[Advanced, off by default: refuses unless the user enabled home-structure tools in this plugin's settings.] Put one device into a room of its home. Room ids come from list_homes. Only do this when the user asked for the tidying.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "description": "Device id from list_devices."
+          },
+          "room_id": {
+            "type": "string",
+            "description": "Target room id from list_homes."
+          },
+          "home_id": {
+            "type": "string",
+            "description": "Only needed when the device is not in the home you expect."
+          }
+        },
+        "required": [
+          "device_id",
+          "room_id"
+        ]
+      }
+    },
+    {
+      "name": "remove_device",
+      "description": "[Advanced, off by default: refuses unless the user enabled home-structure tools in this plugin's settings.] Unbind a device from the Tuya cloud and the account. Destructive and not undoable from here: the device leaves the Tuya app too. Requires confirm_device_id to repeat device_id exactly, because devices can share a display name. Only call when the user named the device to remove.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "description": "Device id from list_devices."
+          },
+          "confirm_device_id": {
+            "type": "string",
+            "description": "The same device_id again, as explicit confirmation. Never guess this."
+          }
+        },
+        "required": [
+          "device_id",
+          "confirm_device_id"
+        ]
+      }
+    },
+    {
+      "name": "tuya_status",
+      "description": "Diagnostic: reports which Tuya data centre was detected for the saved key, whether the key was accepted, and how many homes it can see. Use this first when the user says the plugin cannot connect, or before assuming a device is offline. Never exposes the key.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "refresh": {
+            "type": "boolean",
+            "description": "Forget the cached data centre and re-probe all centres. Use after changing the key or the data-centre pin in settings."
+          }
+        }
+      }
+    }
+  ],
+  "network": {
+    "hosts": [
+      "openapi.tuyacn.com",
+      "openapi.tuyaus.com",
+      "openapi.tuyaeu.com",
+      "openapi.tuyain.com",
+      "openapi-ueaz.tuyaus.com",
+      "openapi-weaz.tuyaeu.com",
+      "openapi-sg.iotbing.com"
+    ],
+    "secrets": [
+      {
+        "key": "tuya_api_key",
+        "label": "Tuya API key",
+        "hint": "Starts with sk-. Create it at tuya.ai (international) or tuyasmart.com (China mainland). The key carries your account's region, so use the one that matches where your account is registered.",
+        "url": "https://tuya.ai/",
+        "inject": {
+          "header": "Authorization",
+          "format": "Bearer {value}"
+        }
+      }
+    ]
+  },
+  "setup": {
+    "requires": [
+      {
+        "anyOf": [
+          "secret:tuya_api_key"
+        ]
+      }
+    ]
+  },
+  "panel": {
+    "title": "Tuya Home",
+    "html": "panel.html",
+    "position": "left",
+    "minWidth": 260,
+    "defaultFraction": 0.24
+  },
+  "settingsHtml": "settings.html",
+  "skill": {
+    "items": [
+      {
+        "dir": "skills/tuya-home",
+        "name": "tuya-home",
+        "description": "Read and control the user's Tuya / Smart Life smart home devices. Use for lights, plugs, air conditioners, sensors and curtains: what is on, current state, switch, brightness, temperature, mode, rooms and homes."
+      }
+    ]
+  }
+}
